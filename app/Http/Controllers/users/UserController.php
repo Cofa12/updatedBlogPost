@@ -12,16 +12,31 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use PDOException;
+use Illuminate\Database\QueryException;
+
 
 class UserController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-//    public function index()
-//    {
-//        //
-//    }
+    public function index(string $id)
+    {
+        //
+        try{
+            $posts = Post::where('user_id',$id)->get();
+            return response([
+                'status'=>true,
+                'posts'=>$posts
+            ],200);
+        }catch (\Exception $e){
+            return response()->json([
+                'status'=>false,
+                'message'=>'server error',
+                'error'=>$e->getMessage(),
+            ],500);
+        }
+    }
 
     /**
      * Show the form for creating a new resource.
@@ -82,7 +97,7 @@ class UserController extends Controller
         try{
             $validator = validator::make($request->all(),[
                 'name'=>'string|max:40',
-                'image'=>'image',
+                'image'=>'image|Nullable',
                 'email'=>'email|string'
             ]);
 
@@ -118,7 +133,14 @@ class UserController extends Controller
                 'message'=>'Post hasn\'t been edited'
             ],422);
 
-        }catch (\Exception $e){
+        }catch (QueryException $e){
+            return response()->json([
+                'status'=>false,
+                'message'=>'this email has been chosen before',
+            ],401);
+        }
+
+        catch (\Exception $e){
             return response()->json([
                 'status'=>false,
                 'message'=>'server error',
@@ -156,13 +178,13 @@ class UserController extends Controller
 
     }
 
-    public function updatePost(Request $request, string $user_id,string $post_id)
+    public function updatePost(Request $request, string $id,string $post_id)
     {
         try {
             $validator = validator::make($request->all(), [
                 'title' => 'string|max:40',
-                'image' => '|image',
-                'postContent' => '|string',
+                'image' => 'image|Nullable',
+                'postContent' => 'string',
             ]);
 
             if ($validator->fails()) {
@@ -171,15 +193,21 @@ class UserController extends Controller
                     'message' => $validator->errors()
                 ], 401);
             }
-            $path = Storage::disk('public')->putFile('postsImage', $request->file('image'));
-            $post = Post::where('id', $post_id)->where('user_id', $user_id)->update([
+            $path = null;
+            if($request->file('image')){
+                $path = Storage::disk('public')->putFile('postsImage', $request->file('image'));
+            }
+            $post = Post::where('id', $post_id)->where('user_id', $id)->update([
                 'title' => $request->title,
-                'image' => $path,
                 'content' => $request->postContent
             ]);
+            if($path){
+                $post->image=$path;
+                $post->save();
+            }
 
             if ($post) {
-                Log::info('User ' . $user_id . 'has created a post ' . $post_id);
+                Log::info('User ' . $id . 'has created a post ' . $post_id);
                 return response()->json([
                     'status' => true,
                     'message' => 'Post has been edited successfully'
@@ -197,12 +225,12 @@ class UserController extends Controller
                 'error' => $r->getMessage(),
             ], 500);
         }
-//        catch (Exception $e) {
-//            return response()->json([
-//                'status' => false,
-//                'message' => 'server error',
-//                'error' => $e->getMessage(),
-//            ], 500);
-//        }
+        catch (Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'server error',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

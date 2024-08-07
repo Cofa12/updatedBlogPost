@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Sanctum\HasApiTokens;
-
+use App\Exceptions\UnauthenticatedUserException;
 
 class AuthController extends Controller
 {
@@ -125,20 +125,20 @@ class AuthController extends Controller
         }
 }
     public function logout(Request $request){
-        try{
-            if($request->user()->currentAccessToken()->delete()){
+        try {
+            if ($request->user()->currentAccessToken()->delete()) {
                 return response()->json([
-                    'status'=>true,
-                    'message'=>'Successfully logout'
-                ],200);
-            }else {
+                    'status' => true,
+                    'message' => 'Successfully logout'
+                ], 200);
+            } else {
                 return response()->json([
                     'status' => false,
                     'message' => 'Can\'t logout'
                 ], 401);
             }
-
-        }catch (\Exception $e){
+        }
+        catch (\Exception $e){
             return response()->json([
                 'status'=>false,
                 'message'=>'server error',

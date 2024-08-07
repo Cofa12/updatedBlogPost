@@ -21,8 +21,8 @@ Route::post('/logout',[AuthController::class,'logout'])->middleware('auth:sanctu
 Route::group(['middleware'=>['LoggedIn','SanitizeCredentials']],function (){
     Route::apiResource('posts',PostController::class);
     Route::apiResource('user',UserController::class);
-    Route::put('user/{id}/post/{id}',[UserController::class,'updatePost']);
-    Route::delete('user/{user_id}/post/{post_id}',[UserController::class,'deletePost']);
+    Route::get('user/{user}/posts',[UserController::class,'index']);
+    Route::put('user/{id}/post/{post_id}',[UserController::class,'updatePost']);
 });
 
 // profile resources
